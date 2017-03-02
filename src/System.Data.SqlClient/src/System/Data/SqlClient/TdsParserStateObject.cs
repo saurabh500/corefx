@@ -263,7 +263,6 @@ namespace System.Data.SqlClient
 
             CreateSessionHandle(physicalConnection, async);
 
-            ;
             if (IsFailedHandle())
             {
                 AddError(parser.ProcessSNIError(this));
@@ -776,6 +775,8 @@ namespace System.Data.SqlClient
         internal abstract object AddPacketToPendingList(object packet);
 
         protected abstract void RemovePacketFromPendingList(object pointer);
+
+        internal abstract uint GenerateSspiClientContext(byte[] receivedBuff, uint receivedLength, byte[] sendBuff, ref uint sendLength, byte[] _sniSpnBuffer);
 
         internal bool Deactivate()
         {
@@ -3938,43 +3939,42 @@ namespace System.Data.SqlClient
             }
         }
 
-        internal abstract uint GenerateSspiClientContext(byte[] receivedBuff, uint receivedLength, byte[] sendBuff, ref uint sendLength, byte[] _sniSpnBuffer);
         /*
 
-// leave this in. comes handy if you have to do Console.WriteLine style debugging ;)
-private void DumpBuffer() {
-Console.WriteLine("dumping buffer");
-Console.WriteLine("_inBytesRead = {0}", _inBytesRead);
-Console.WriteLine("_inBytesUsed = {0}", _inBytesUsed);
-int cc = 0; // character counter
-int i;
-Console.WriteLine("used buffer:");
-for (i=0; i< _inBytesUsed; i++) {
-if (cc==16) {
-Console.WriteLine();
-cc = 0;
-}
-Console.Write("{0,-2:X2} ", _inBuff[i]);
-cc++;
-}
-if (cc>0) {
-Console.WriteLine();
-}
+        // leave this in. comes handy if you have to do Console.WriteLine style debugging ;)
+                private void DumpBuffer() {
+                    Console.WriteLine("dumping buffer");
+                    Console.WriteLine("_inBytesRead = {0}", _inBytesRead);
+                    Console.WriteLine("_inBytesUsed = {0}", _inBytesUsed);
+                    int cc = 0; // character counter
+                    int i;
+                    Console.WriteLine("used buffer:");
+                    for (i=0; i< _inBytesUsed; i++) {
+                        if (cc==16) {
+                            Console.WriteLine();
+                            cc = 0;
+                        }
+                        Console.Write("{0,-2:X2} ", _inBuff[i]);
+                        cc++;
+                    }
+                    if (cc>0) {
+                        Console.WriteLine();
+                    }
 
-cc = 0;
-Console.WriteLine("unused buffer:");
-for (i=_inBytesUsed; i<_inBytesRead; i++) {
-if (cc==16) {
-Console.WriteLine();
-cc = 0;
-}
-Console.Write("{0,-2:X2} ", _inBuff[i]);
-cc++;
-}
-if (cc>0) {
-Console.WriteLine();
-}
-}
-*/
+                    cc = 0;
+                    Console.WriteLine("unused buffer:");
+                    for (i=_inBytesUsed; i<_inBytesRead; i++) {
+                        if (cc==16) {
+                            Console.WriteLine();
+                            cc = 0;
+                        }
+                        Console.Write("{0,-2:X2} ", _inBuff[i]);
+                        cc++;
+                    }
+                    if (cc>0) {
+                        Console.WriteLine();
+                    }
+                }
+        */
     }
 }
