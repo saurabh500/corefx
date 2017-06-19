@@ -997,6 +997,15 @@ namespace System.Data.SqlClient
 
             _fConnectionOpen = true; // mark connection as open
 
+            // for non-pooled connections, enlist in a distributed transaction
+            // if present - and user specified to enlist
+            if (enlistOK && ConnectionOptions.Enlist)
+            {
+                _parser._physicalStateObj.SniContext = SniContext.Snix_AutoEnlist;
+                SysTx.Transaction tx = ADP.GetCurrentTransaction();
+                Enlist(tx);
+            }
+
             _parser._physicalStateObj.SniContext = SniContext.Snix_Login;
         }
 
