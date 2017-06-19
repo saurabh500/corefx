@@ -706,14 +706,17 @@ namespace System.Data.SqlClient
             // cause our transaction to be rolled back and the connection
             // to be reset.  We'll get called again once the delegated
             // transaction is completed and we can do it all then.
-            Debug.Assert(null != _parser || IsConnectionDoomed, "Deactivating a disposed connection?");
-            if (_parser != null)
+            if (!IsNonPoolableTransactionRoot)
             {
-                _parser.Deactivate(IsConnectionDoomed);
-
-                if (!IsConnectionDoomed)
+                Debug.Assert(null != _parser || IsConnectionDoomed, "Deactivating a disposed connection?");
+                if (_parser != null)
                 {
-                    ResetConnection();
+                    _parser.Deactivate(IsConnectionDoomed);
+
+                    if (!IsConnectionDoomed)
+                    {
+                        ResetConnection();
+                    }
                 }
             }
         }
