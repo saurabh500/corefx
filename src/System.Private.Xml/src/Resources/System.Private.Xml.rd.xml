@@ -5,6 +5,7 @@
       <Namespace Name="System.Xml">
         <!-- XmlQualifiedName is well known to the serializers and must not be explicitly specified to sg.exe -->
         <Type Name="XmlQualifiedName" DataContractSerializer="Excluded" DataContractJsonSerializer="Excluded"/>
+        <Type Name="XmlReader" Dynamic="Required" />
       </Namespace>
       <Namespace Name="System.Xml.Serialization">
         <Type Name="XmlSerializer">
