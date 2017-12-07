@@ -125,9 +125,7 @@ namespace System.Data.SqlClient.SNI
                 Task<Socket> connectTask;
                 if (parallel)
                 {
-                    Task<IPAddress[]> serverAddrTask = Dns.GetHostAddressesAsync(serverName);
-                    serverAddrTask.Wait(ts);
-                    IPAddress[] serverAddresses = serverAddrTask.Result;
+                    IPAddress[] serverAddresses = Dns.GetHostAddresses(serverName);
 
                     if (serverAddresses.Length > MaxParallelIpAddresses)
                     {
@@ -184,7 +182,7 @@ namespace System.Data.SqlClient.SNI
 
         private static async Task<Socket> ConnectAsync(string serverName, int port)
         {
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(serverName).ConfigureAwait(false);
+            IPAddress[] addresses = Dns.GetHostAddresses(serverName);
             IPAddress targetAddrV4 = Array.Find(addresses, addr => (addr.AddressFamily == AddressFamily.InterNetwork));
             IPAddress targetAddrV6 = Array.Find(addresses, addr => (addr.AddressFamily == AddressFamily.InterNetworkV6));
             if (targetAddrV4 != null && targetAddrV6 != null)
@@ -193,7 +191,7 @@ namespace System.Data.SqlClient.SNI
             }
             else
             {
-                IPAddress targetAddr = (targetAddrV4 != null) ? targetAddrV4 : targetAddrV6;
+                IPAddress targetAddr = targetAddrV4 ?? targetAddrV6;
                 var socket = new Socket(targetAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
                 try
