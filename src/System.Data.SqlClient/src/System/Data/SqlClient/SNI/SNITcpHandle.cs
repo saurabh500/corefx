@@ -122,7 +122,7 @@ namespace System.Data.SqlClient.SNI
                     ts = ts.Ticks < 0 ? TimeSpan.FromTicks(0) : ts;
                 }
 
-                Task<Socket> connectTask;
+                Task<Socket> connectTask = null;
                 if (parallel)
                 {
                     Task<IPAddress[]> serverAddrTask = Dns.GetHostAddressesAsync(serverName);
@@ -140,16 +140,11 @@ namespace System.Data.SqlClient.SNI
                 }
                 else
                 {
-                    connectTask = ConnectAsync(serverName, port);
+                    _socket = ConnectAsync(serverName, port);
                 }
 
-                if (!(isInfiniteTimeOut ? connectTask.Wait(-1) : connectTask.Wait(ts)))
-                {
-                    ReportTcpSNIError(0, SNICommon.ConnOpenFailedError, string.Empty);
-                    return;
-                }
 
-                _socket = connectTask.Result;
+                _socket = _socket?? connectTask.Result;
                 if (_socket == null || !_socket.Connected)
                 {
                     if (_socket != null)
@@ -182,23 +177,18 @@ namespace System.Data.SqlClient.SNI
             _status = TdsEnums.SNI_SUCCESS;
         }
 
-        private static async Task<Socket> ConnectAsync(string serverName, int port)
+        private static Socket ConnectAsync(string serverName, int port)
         {
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(serverName).ConfigureAwait(false);
+            IPAddress[] addresses = Dns.GetHostAddresses(serverName);
             IPAddress targetAddrV4 = Array.Find(addresses, addr => (addr.AddressFamily == AddressFamily.InterNetwork));
             IPAddress targetAddrV6 = Array.Find(addresses, addr => (addr.AddressFamily == AddressFamily.InterNetworkV6));
-            if (targetAddrV4 != null && targetAddrV6 != null)
             {
-                return await ParallelConnectAsync(new IPAddress[] { targetAddrV4, targetAddrV6 }, port).ConfigureAwait(false);
-            }
-            else
-            {
-                IPAddress targetAddr = (targetAddrV4 != null) ? targetAddrV4 : targetAddrV6;
+                IPAddress targetAddr = targetAddrV4 ?? targetAddrV6;
                 var socket = new Socket(targetAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
                 try
                 {
-                    await socket.ConnectAsync(targetAddr, port).ConfigureAwait(false);
+                    socket.Connect(targetAddr, port);
                 }
                 catch
                 {
