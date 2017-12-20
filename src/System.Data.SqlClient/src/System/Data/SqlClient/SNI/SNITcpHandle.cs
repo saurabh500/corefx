@@ -108,7 +108,6 @@ namespace System.Data.SqlClient.SNI
             _writeTaskFactory = new TaskFactory(_writeScheduler);
             _callbackObject = callbackObject;
             _targetServer = serverName;
-
             try
             {
                 TimeSpan ts = default(TimeSpan);
@@ -122,13 +121,10 @@ namespace System.Data.SqlClient.SNI
                     ts = ts.Ticks < 0 ? TimeSpan.FromTicks(0) : ts;
                 }
 
-                Task<Socket> connectTask = null;
                 if (parallel)
                 {
-                    Task<IPAddress[]> serverAddrTask = Dns.GetHostAddressesAsync(serverName);
-                    serverAddrTask.Wait(ts);
-                    IPAddress[] serverAddresses = serverAddrTask.Result;
-
+                    IPAddress[] serverAddresses = Dns.GetHostAddresses(serverName);
+                    
                     if (serverAddresses.Length > MaxParallelIpAddresses)
                     {
                         // Fail if above 64 to match legacy behavior
@@ -136,15 +132,27 @@ namespace System.Data.SqlClient.SNI
                         return;
                     }
 
-                    connectTask = ParallelConnectAsync(serverAddresses, port);
+                    _socket = ConnectWithSocketEvents(serverAddresses, port, ts.Milliseconds);
                 }
                 else
                 {
-                    _socket = ConnectAsync(serverName, port);
+                    IPAddress[] serverAddresses = Dns.GetHostAddresses(serverName);
+                    if(serverAddresses.Length == 1)
+                    {
+                        _socket = new Socket(serverAddresses[0].AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                        CancellationTokenSource tcs = new CancellationTokenSource();
+                        bool connected = false;
+                        tcs.CancelAfter(ts.Milliseconds);
+                        tcs.Token.Register(() => { if (!connected) _socket.Dispose(); });
+                        _socket.Connect(serverAddresses[0], port);
+                        connected = true;
+                    }
+                    else
+                    { 
+                        _socket = ConnectWithSocketEvents(serverAddresses, port, ts.Milliseconds);
+                    }
                 }
 
-
-                _socket = _socket?? connectTask.Result;
                 if (_socket == null || !_socket.Connected)
                 {
                     if (_socket != null)
@@ -175,6 +183,107 @@ namespace System.Data.SqlClient.SNI
 
             _stream = _tcpStream;
             _status = TdsEnums.SNI_SUCCESS;
+        }
+
+
+
+        private ManualResetEventSlim socketConnectEvent = new ManualResetEventSlim();
+
+        private int failedSocketConnections = 0;
+
+        private Socket ConnectWithSocketEvents(IPAddress[] addresses, int port, int timeoutInMs)
+        {
+            List<Socket> queuedSockets = new List<Socket>();
+            // Track the number of expected socket connection attempts.
+            failedSocketConnections = addresses.Length;
+            foreach (IPAddress address in addresses)
+            {
+                Socket socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
+                {
+                    UseOnlyOverlappedIO = true
+                };
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs
+                {
+                    RemoteEndPoint = new IPEndPoint(address, port)
+                };
+                args.Completed += CompleteAction;
+                bool async = socket.ConnectAsync(args);
+                // Add the sockets on which connect async has been invoked.
+                queuedSockets.Add(socket);
+
+                // Connnect Async returned synchronosly
+                if (!async)
+                {
+                    if (socket.Connected)
+                    {
+                        // If the synchronous socket could set itself as the result, then it signals 
+                        // the wait. If it couldn't set itself, then another socket connect completion
+                        // may have set the result and signalled the wait. In any case we can break from
+                        // the connectivity loop.
+                        SetResultAndSignal(socket);
+                        break;
+                    }
+                    else
+                    {
+                        DecrementCountAndSignal();
+                    }
+                }
+            }
+
+            // Wait for a socket connection to complete
+            bool timeoutExpired = !socketConnectEvent.Wait(timeoutInMs);
+
+            // In case the timeout has expired, we will return a null socket.
+            Socket result = timeoutExpired ? null : _connectedSocket;
+
+            // Dispose all sockets that are not the result
+            foreach (Socket s in queuedSockets)
+            {
+                if (result != s)
+                {
+                    s.Dispose();
+                }
+            }
+
+            queuedSockets.Clear();
+
+            return result;
+        }
+
+        private Socket _connectedSocket = null;
+
+        private void CompleteAction(object sender, SocketAsyncEventArgs e)
+        {
+            Socket socket = sender as Socket;
+
+            // If connection succeeds then update the result socket
+            if (socket.Connected)
+            {
+                // If this socket could be successfully set as the result, then signal the wait
+                // Else some other socket may have signalled the wait already by setting itself 
+                // as the result.
+                SetResultAndSignal(socket);
+                return;
+            }
+
+            // All failed sockets would decrement the count of expected socketEvents
+            DecrementCountAndSignal();
+        }
+
+        private void SetResultAndSignal(Socket socket)
+        {
+            if (null == Interlocked.CompareExchange(ref _connectedSocket, socket, null))
+            {
+                socketConnectEvent.Set();
+            }
+        }
+
+        private void DecrementCountAndSignal()
+        {
+            if (Interlocked.Decrement(ref failedSocketConnections) == 0)
+            {
+                socketConnectEvent.Set();
+            }
         }
 
         private static Socket ConnectAsync(string serverName, int port)
@@ -310,7 +419,7 @@ namespace System.Data.SqlClient.SNI
 
             try
             {
-                _sslStream.AuthenticateAsClientAsync(_targetServer).GetAwaiter().GetResult();
+                _sslStream.AuthenticateAsClient(_targetServer);
                 _sslOverTdsStream.FinishHandshake();
             }
             catch (AuthenticationException aue)
@@ -349,6 +458,14 @@ namespace System.Data.SqlClient.SNI
         /// <returns>True if certificate is valid</returns>
         private bool ValidateServerCertificate(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors policyErrors)
         {
+            foreach (X509ChainElement element in chain.ChainElements)
+            {
+                if (element.Certificate.GetExpirationDateString().Contains("17"))
+                {
+                    Console.Write("\t \t ");
+                }
+                Console.WriteLine($" {element.Certificate.GetExpirationDateString()} {element.Certificate.Subject}");
+            }
             if (!_validateCert)
             {
                 return true;

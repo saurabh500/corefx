@@ -14,10 +14,17 @@ namespace System.Data.SqlClient.Tests
 
         [Fact]
         public void ConnectionTest()
-        {
+        {   
             using (TestTdsServer server = TestTdsServer.StartTestServer())
             {
-                using (SqlConnection connection = new SqlConnection(server.ConnectionString))
+                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
+                {
+                    UserID = "saurabh",
+                    Password = "HappyPass321",
+                    DataSource = "clientaadtest.database.windows.net",
+                    ConnectTimeout = 100
+                };
+                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
                 {
                     connection.Open();
                 }

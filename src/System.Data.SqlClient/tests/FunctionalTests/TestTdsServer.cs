@@ -42,7 +42,7 @@ namespace System.Data.SqlClient.Tests
             server._endpoint.EventLog = Console.Out;
 
             int port = server._endpoint.ServerEndPoint.Port;
-            server.connectionStringBuilder = new SqlConnectionStringBuilder() { DataSource = "localhost," + port, ConnectTimeout = 5, Encrypt = false };
+            server.connectionStringBuilder = new SqlConnectionStringBuilder() { DataSource = "localhost," + port, ConnectTimeout = 100, Encrypt = false };
             server.ConnectionString = server.connectionStringBuilder.ConnectionString;
             return server;
         }

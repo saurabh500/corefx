@@ -715,10 +715,7 @@ namespace System.Data.SqlClient
                                 if (tdsConn.Parser._sessionPool.ActiveSessionsCount > 0)
                                 {
                                     // >1 MARS session 
-                                    if (beforeDisconnect != null)
-                                    {
-                                        beforeDisconnect();
-                                    }
+                                    beforeDisconnect?.Invoke();
                                     OnError(SQL.CR_UnrecoverableClient(ClientConnectionId), true, null);
                                 }
                             }
@@ -736,10 +733,7 @@ namespace System.Data.SqlClient
                                         { // could change since the first check, but now is stable since connection is know to be broken
                                             _originalConnectionId = ClientConnectionId;
                                             _recoverySessionData = cData;
-                                            if (beforeDisconnect != null)
-                                            {
-                                                beforeDisconnect();
-                                            }
+                                            beforeDisconnect?.Invoke();
                                             try
                                             {
                                                 _suppressStateChangeForReconnection = true;
@@ -766,10 +760,7 @@ namespace System.Data.SqlClient
                             }
                             else
                             {
-                                if (beforeDisconnect != null)
-                                {
-                                    beforeDisconnect();
-                                }
+                                beforeDisconnect?.Invoke();
                                 OnError(SQL.CR_UnrecoverableServer(ClientConnectionId), true, null);
                             }
                         } // ValidateSNIConnection
@@ -778,10 +769,7 @@ namespace System.Data.SqlClient
             }
             else
             { // runningReconnect = null
-                if (beforeDisconnect != null)
-                {
-                    beforeDisconnect();
-                }
+                beforeDisconnect?.Invoke();
             }
             return runningReconnect;
         }
