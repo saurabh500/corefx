@@ -2369,14 +2369,6 @@ namespace System.Data.SqlClient
             }
             finally
             {
-                if (!TdsParserStateObjectFactory.UseManagedSNI)
-                {
-                    if (!IsPacketEmpty(readPacket))
-                    {
-                        // Be sure to release packet, otherwise it will be leaked by native.
-                        ReleasePacket(readPacket);
-                    }
-                }
                 AssertValidState();
             }
         }
@@ -2411,7 +2403,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    UInt32 error;
+                    uint error;
 
                     object readPacket = EmptyReadPacket;
 

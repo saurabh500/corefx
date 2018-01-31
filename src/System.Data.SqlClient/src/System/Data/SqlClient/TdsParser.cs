@@ -307,11 +307,7 @@ namespace System.Data.SqlClient
 
             _sniSpnBuffer = null;
 
-            if (integratedSecurity)
-            {
-                LoadSSPILibrary();
-            }
-
+            
             byte[] instanceName = null;
 
             Debug.Assert(_connHandler != null, "SqlConnectionInternalTds handler can not be null at this point.");
@@ -435,7 +431,7 @@ namespace System.Data.SqlClient
                 // Cache physical stateObj and connection.
                 _pMarsPhysicalConObj = _physicalStateObj;
 
-                if(TdsParserStateObjectFactory.UseManagedSNI) _pMarsPhysicalConObj.IncrementPendingCallbacks();
+                _pMarsPhysicalConObj.IncrementPendingCallbacks();
 
                 UInt32 info = 0;
                 uint error = _pMarsPhysicalConObj.EnableMars(ref info);
@@ -445,8 +441,6 @@ namespace System.Data.SqlClient
                     _physicalStateObj.AddError(ProcessSNIError(_physicalStateObj));
                     ThrowExceptionAndWarning(_physicalStateObj);
                 }
-
-                PostReadAsyncForMars();
 
                 _physicalStateObj = CreateSession(); // Create and open default MARS stateObj and connection.
             }
@@ -792,8 +786,6 @@ namespace System.Data.SqlClient
                                 ThrowExceptionAndWarning(_physicalStateObj);
                             }
 
-                            WaitForSSLHandShakeToComplete(ref error);
-                            
                             // create a new packet encryption changes the internal packet size
                             _physicalStateObj.ClearAllWritePackets();
                         }
@@ -1160,11 +1152,9 @@ namespace System.Data.SqlClient
             // !=null       | == 0     | replace text left of errorMessage
             //
 
-            if (TdsParserStateObjectFactory.UseManagedSNI)
-                Debug.Assert(!string.IsNullOrEmpty(details.errorMessage) || details.sniErrorNumber != 0, "Empty error message received from SNI");
-            else
-                Debug.Assert(!string.IsNullOrEmpty(details.errorMessage), "Empty error message received from SNI");
-
+            
+            Debug.Assert(!string.IsNullOrEmpty(details.errorMessage) || details.sniErrorNumber != 0, "Empty error message received from SNI");
+            
             string sniContextEnumName = TdsEnums.GetSniContextEnumName(stateObj.SniContext);
 
             string sqlContextInfo = SR.GetResourceString(sniContextEnumName, sniContextEnumName);
@@ -1204,28 +1194,13 @@ namespace System.Data.SqlClient
             else
             {
 
-                if (TdsParserStateObjectFactory.UseManagedSNI)
-                {
-                    // SNI error. Append additional error message info if available.
-                    //
-                    string sniLookupMessage = SQL.GetSNIErrorMessage((int)details.sniErrorNumber);
-                    errorMessage = (errorMessage != string.Empty) ?
-                                    (sniLookupMessage + ": " + errorMessage) :
-                                    sniLookupMessage;
-                }
-                else
-                {
-                    // SNI error. Replace the entire message.
-                    //
-                    errorMessage = SQL.GetSNIErrorMessage((int)details.sniErrorNumber);
+                // SNI error. Append additional error message info if available.
+                //
+                string sniLookupMessage = SQL.GetSNIErrorMessage((int)details.sniErrorNumber);
+                errorMessage = (errorMessage != string.Empty) ?
+                                (sniLookupMessage + ": " + errorMessage) :
+                                sniLookupMessage;
 
-                    // If its a LocalDB error, then nativeError actually contains a LocalDB-specific error code, not a win32 error code
-                    if (details.sniErrorNumber == (int)SNINativeMethodWrapper.SniSpecialErrors.LocalDBErrorCode)
-                    {
-                        errorMessage += LocalDBAPI.GetLocalDBMessage((int)details.nativeError);
-                        win32ErrorCode = 0;
-                    }
-                }
             }
             errorMessage = String.Format((IFormatProvider)null, "{0} (provider: {1}, error: {2} - {3})",
                 sqlContextInfo, providerName, (int)details.sniErrorNumber, errorMessage);
@@ -6333,30 +6308,13 @@ namespace System.Data.SqlClient
 
         private void SNISSPIData(byte[] receivedBuff, UInt32 receivedLength, ref byte[] sendBuff, ref UInt32 sendLength)
         {
-            if (TdsParserStateObjectFactory.UseManagedSNI)
+            try
             {
-                try
-                {
-                    _physicalStateObj.GenerateSspiClientContext(receivedBuff, receivedLength, ref sendBuff, ref sendLength, _sniSpnBuffer);
-                }
-                catch (Exception e)
-                {
-                    SSPIError(e.Message + Environment.NewLine + e.StackTrace, TdsEnums.GEN_CLIENT_CONTEXT);
-                }
+                _physicalStateObj.GenerateSspiClientContext(receivedBuff, receivedLength, ref sendBuff, ref sendLength, _sniSpnBuffer);
             }
-            else
-            { 
-                if (receivedBuff == null)
-                {
-                    // if we do not have SSPI data coming from server, send over 0's for pointer and length
-                    receivedLength = 0;
-                }
-
-                // we need to respond to the server's message with SSPI data
-                if (0 != _physicalStateObj.GenerateSspiClientContext(receivedBuff, receivedLength, ref sendBuff, ref sendLength, _sniSpnBuffer))
-                {
-                    SSPIError(SQLMessage.SSPIGenerateError(), TdsEnums.GEN_CLIENT_CONTEXT);
-                }
+            catch (Exception e)
+            {
+                SSPIError(e.Message + Environment.NewLine + e.StackTrace, TdsEnums.GEN_CLIENT_CONTEXT);
             }
         }
 

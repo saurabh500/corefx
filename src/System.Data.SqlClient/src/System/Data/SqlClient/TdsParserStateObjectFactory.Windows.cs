@@ -9,8 +9,6 @@ namespace System.Data.SqlClient
     internal sealed class TdsParserStateObjectFactory
     {
 
-        private const string UseLegacyNetworkingOnWindows = "System.Data.SqlClient.UseLegacyNetworkingOnWindows";
-
         public static readonly TdsParserStateObjectFactory Singleton = new TdsParserStateObjectFactory();
 
 
@@ -19,13 +17,12 @@ namespace System.Data.SqlClient
         //private static bool shouldUseLegacyNetorking;
         //public static bool UseManagedSNI { get; } = AppContext.TryGetSwitch(UseLegacyNetworkingOnWindows, out shouldUseLegacyNetorking) ? !shouldUseLegacyNetorking : true;
 
-        public static bool UseManagedSNI { get; } = false;
-
+        
         public EncryptionOptions EncryptionOptions
         {
             get
             {
-                return UseManagedSNI ? SNI.SNILoadHandle.SingletonInstance.Options : SNILoadHandle.SingletonInstance.Options;
+                return SNI.SNILoadHandle.SingletonInstance.Options;
             }
         }
 
@@ -33,32 +30,20 @@ namespace System.Data.SqlClient
         {
             get
             {
-                return UseManagedSNI ? SNI.SNILoadHandle.SingletonInstance.Status : SNILoadHandle.SingletonInstance.Status;
+                return SNI.SNILoadHandle.SingletonInstance.Status;
             }
         }
 
         public TdsParserStateObject CreateTdsParserStateObject(TdsParser parser)
         {
-            if (UseManagedSNI)
-            {
-                return new TdsParserStateObjectManaged(parser);
-            }
-            else
-            {
-                return new TdsParserStateObjectNative(parser);
-            }
+            
+            return new TdsParserStateObjectManaged(parser);
+            
         }
 
         internal TdsParserStateObject CreateSessionObject(TdsParser tdsParser, TdsParserStateObject _pMarsPhysicalConObj, bool v)
         {
-            if (TdsParserStateObjectFactory.UseManagedSNI)
-            {
-                return new TdsParserStateObjectManaged(tdsParser, _pMarsPhysicalConObj, true);
-            }
-            else
-            {
-                return new TdsParserStateObjectNative(tdsParser, _pMarsPhysicalConObj, true);
-            }
+            return new TdsParserStateObjectManaged(tdsParser, _pMarsPhysicalConObj, true);
         }
     }
 }
