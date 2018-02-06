@@ -13,6 +13,52 @@ namespace System.Data.SqlClient.Tests
 {
     public class SqlConnectionBasicTests
     {
+        private static readonly string s_tcpConnStr = Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR") ?? string.Empty;
+        private static int ITERATIONS = 20;
+        public static bool IsConnectionStringConfigured() => s_tcpConnStr != string.Empty;
+
+        [ConditionalFact(nameof(IsConnectionStringConfigured))]
+        public void ParallelDataFetch()
+        {
+            SqlConnectionStringBuilder b = new SqlConnectionStringBuilder()
+            {
+                MultipleActiveResultSets = false,
+                DataSource = "tcp:sausing-desktop",
+                IntegratedSecurity = true
+                
+            };
+
+            int timeoutSec = 5;
+            string connStrNotAvailable = b.ToString();
+            using (SqlConnection conn = new SqlConnection(b.ToString()))
+            {
+                conn.Open();
+                using (SqlCommand c = conn.CreateCommand())
+                {
+                    c.CommandText = @"SELECT net_transport   
+FROM sys.dm_exec_connections   
+WHERE session_id = @@SPID; ";
+                    Console.WriteLine(c.ExecuteScalar());
+                }
+            }
+            List<ConnectionWorker> list = new List<ConnectionWorker>();
+            for (int i = 0; i < ITERATIONS; ++i)
+            {
+                list.Add(new ConnectionWorker(b.ToString()));
+            }
+
+            ConnectionWorker.Execute();
+
+            double theMax = 0;
+            foreach (ConnectionWorker w in list)
+            {
+                theMax += w.MaxTimeElapsed;
+            }
+
+            int threshold = (timeoutSec + 1) * 1000;
+            Console.WriteLine($"Average execution time {theMax / ITERATIONS}");
+        }
+
         [Fact]
         public void ConnectionTest()
         {
@@ -92,8 +138,7 @@ namespace System.Data.SqlClient.Tests
                 list.Add(new ConnectionWorker(connStrNotAvailable));
             }
 
-            ConnectionWorker.Start();
-            ConnectionWorker.Stop();
+            ConnectionWorker.Execute();
 
             double theMax = 0;
             foreach (ConnectionWorker w in list)
@@ -134,35 +179,38 @@ namespace System.Data.SqlClient.Tests
                 }
             }
 
-            public static void Start()
+            public static void Execute()
             {
                 startEvent.Set();
-            }
-
-            public static void Stop()
-            {
                 foreach (ConnectionWorker w in workerList)
                 {
                     w.doneEvent.Wait();
                 }
             }
 
+            
+
             public void SqlConnectionOpen()
             {
                 startEvent.Wait();
 
                 Stopwatch sw = new Stopwatch();
-                using (SqlConnection con = new SqlConnection(connectionString))
+                using (SqlConnection conn = new SqlConnection(this.connectionString))
                 {
+                    conn.Open();
                     sw.Start();
-                    try
-                    {
-                        con.Open();
-                    }
-                    catch { }
-                    sw.Stop();
-                }
 
+                    using (SqlCommand c = conn.CreateCommand())
+                    {
+                        c.CommandText = @"
+                        SELECT  TOP(50000) * FROM DBBench.dbo.dbbench ";
+                        SqlDataReader rdr = c.ExecuteReader();
+                        Console.WriteLine("Flushing Reader");
+                        
+                    }
+                    sw.Stop();
+
+                }
                 double elapsed = sw.Elapsed.TotalMilliseconds;
                 if (maxTimeElapsed < elapsed)
                 {

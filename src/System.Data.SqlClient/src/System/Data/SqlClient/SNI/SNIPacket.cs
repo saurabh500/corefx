@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -240,9 +241,10 @@ namespace System.Data.SqlClient.SNI
         {
             bool error = false;
 
-            stream.ReadAsync(_data, 0, _capacity).ContinueWith(t =>
+            Task<int> tParent = stream.ReadAsync(_data, 0, _capacity);
+            tParent.ContinueWith(t =>
             {
-                Exception e = t.Exception != null ? t.Exception.InnerException : null;
+                Exception e = t.Exception?.InnerException;
                 if (e != null)
                 {
                     SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, e);

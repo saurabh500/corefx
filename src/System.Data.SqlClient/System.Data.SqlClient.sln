@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.Tests", "tests\FunctionalTests\System.Data.SqlClient.Tests.csproj", "{F3E72F35-0351-4D67-9388-725BCAD807BA}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -81,6 +81,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -166,5 +169,8 @@ Global
 		{8DC9D1A0-351B-47BC-A90F-B9DA542550E9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{D58E8D2B-3331-4660-8DFB-512D66F8EC63} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FD6D49A7-3839-4E1D-8ED7-5A99702B8961}
 	EndGlobalSection
 EndGlobal
