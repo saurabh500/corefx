@@ -20,13 +20,7 @@ namespace System.Data.SqlClient.Tests
         [ConditionalFact(nameof(IsConnectionStringConfigured))]
         public void ParallelDataFetch()
         {
-            SqlConnectionStringBuilder b = new SqlConnectionStringBuilder()
-            {
-                MultipleActiveResultSets = false,
-                DataSource = "tcp:sausing-desktop",
-                IntegratedSecurity = true
-                
-            };
+            SqlConnectionStringBuilder b = new SqlConnectionStringBuilder(s_tcpConnStr);
 
             int timeoutSec = 5;
             string connStrNotAvailable = b.ToString();
