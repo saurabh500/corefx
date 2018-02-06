@@ -1074,6 +1074,8 @@ namespace System.Data.ProviderBase
             return false;
         }
 
+        static int available = 0;
+
         private bool TryGetConnection(DbConnection owningObject, uint waitForMultipleObjectsTimeout, bool allowCreate, bool onlyOneCheckConnection, DbConnectionOptions userOptions, out DbConnectionInternal connection)
         {
             DbConnectionInternal obj = null;
@@ -1166,6 +1168,8 @@ namespace System.Data.ProviderBase
                                 //
                                 //    guaranteed available inventory
                                 //
+                                Interlocked.Increment(ref available);
+                                Console.WriteLine($"Available Connection {available}");
                                 Interlocked.Decrement(ref _waitCount);
                                 obj = GetFromGeneralPool();
 
@@ -1589,11 +1593,13 @@ namespace System.Data.ProviderBase
             }
         }
 
+        static int c = 0;
         private DbConnectionInternal UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection = null)
         {
             // called by user when they were not able to obtain a free object but
             // instead obtained creation mutex
-
+            Interlocked.Increment(ref c);
+            Console.WriteLine($"User Create REquest {c}");
             DbConnectionInternal obj = null;
             if (ErrorOccurred)
             {
