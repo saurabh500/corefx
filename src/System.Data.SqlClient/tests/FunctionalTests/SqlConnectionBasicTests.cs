@@ -14,14 +14,16 @@ namespace System.Data.SqlClient.Tests
     public class SqlConnectionBasicTests
     {
         private static readonly string s_tcpConnStr = Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR") ?? string.Empty;
-        private static int ITERATIONS = 20;
+        private static readonly string s_iterations = Environment.GetEnvironmentVariable("ITERATIONS") ?? string.Empty;
+
+        private static int ITERATIONS = 40;
         public static bool IsConnectionStringConfigured() => s_tcpConnStr != string.Empty;
 
         [ConditionalFact(nameof(IsConnectionStringConfigured))]
         public void ParallelDataFetch()
         {
             SqlConnectionStringBuilder b = new SqlConnectionStringBuilder(s_tcpConnStr);
-
+            ITERATIONS = string.IsNullOrEmpty(s_iterations) ? 40 : int.Parse(s_iterations);
             int timeoutSec = 5;
             string connStrNotAvailable = b.ToString();
             using (SqlConnection conn = new SqlConnection(b.ToString()))
