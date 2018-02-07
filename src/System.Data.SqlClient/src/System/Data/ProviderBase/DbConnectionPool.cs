@@ -1169,7 +1169,7 @@ namespace System.Data.ProviderBase
                                 //    guaranteed available inventory
                                 //
                                 Interlocked.Increment(ref available);
-                                Console.WriteLine($"Available Connection {available}");
+                                //Console.WriteLine($"Available Connection {available}");
                                 Interlocked.Decrement(ref _waitCount);
                                 obj = GetFromGeneralPool();
 
@@ -1599,7 +1599,7 @@ namespace System.Data.ProviderBase
             // called by user when they were not able to obtain a free object but
             // instead obtained creation mutex
             Interlocked.Increment(ref c);
-            Console.WriteLine($"User Create REquest {c}");
+            //Console.WriteLine($"User Create REquest {c}");
             DbConnectionInternal obj = null;
             if (ErrorOccurred)
             {
