@@ -533,7 +533,46 @@ namespace System.Data.SqlClient.SNI
         public override uint SendAsync(SNIPacket packet, SNIAsyncCallback callback = null)
         {
             SNIPacket newPacket = packet;
+            bool useNew = true;
+            if(useNew)
+            { 
+                lock (this)
+                {
+                    Task writeTask = packet.WriteToStreamAsync(_stream);
+                    writeTask.ConfigureAwait(false);
+                    writeTask.ContinueWith((t) =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            Exception e = t.Exception;
+                            SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, e);
 
+                            if (callback != null)
+                            {
+                                callback(packet, TdsEnums.SNI_ERROR);
+                            }
+                            else
+                            {
+                                _sendCallback(packet, TdsEnums.SNI_ERROR);
+                            }
+
+                        }
+
+                        if (callback != null)
+                        {
+                            callback(packet, TdsEnums.SNI_SUCCESS);
+                        }
+                        else
+                        {
+                            _sendCallback(packet, TdsEnums.SNI_SUCCESS);
+                        }
+                    });
+                }
+
+
+                return TdsEnums.SNI_SUCCESS_IO_PENDING;
+            }
+            else { 
             _writeTaskFactory.StartNew(() =>
             {
                 try
@@ -567,9 +606,10 @@ namespace System.Data.SqlClient.SNI
                 {
                     _sendCallback(packet, TdsEnums.SNI_SUCCESS);
                 }
-            });
-
+            }).ConfigureAwait(false);
+            
             return TdsEnums.SNI_SUCCESS_IO_PENDING;
+            }
         }
 
         /// <summary>

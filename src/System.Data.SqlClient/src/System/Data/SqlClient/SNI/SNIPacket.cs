@@ -291,6 +291,11 @@ namespace System.Data.SqlClient.SNI
             stream.Write(_data, 0, _length);
         }
 
+        public Task WriteToStreamAsync(Stream stream)
+        {
+            return stream.WriteAsync(_data, 0, _length);
+        }
+
         /// <summary>
         /// Get hash code
         /// </summary>
