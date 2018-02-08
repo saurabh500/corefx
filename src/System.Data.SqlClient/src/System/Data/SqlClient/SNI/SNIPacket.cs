@@ -231,6 +231,20 @@ namespace System.Data.SqlClient.SNI
             _data = new byte[_capacity];
         }
 
+        public void WriteToStreamAsync(Stream stream, SNIAsyncCallback callback)
+        {
+            stream.WriteAsync(_data, 0, _length).ContinueWith(t =>
+            {
+                Exception e = t.Exception?.InnerException;
+                if (e != null)
+                {
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, e);
+                }
+
+                callback(this, e == null ? TdsEnums.SNI_SUCCESS : TdsEnums.SNI_ERROR);
+            });
+        }
+
         /// <summary>
         /// Read data from a stream asynchronously
         /// </summary>

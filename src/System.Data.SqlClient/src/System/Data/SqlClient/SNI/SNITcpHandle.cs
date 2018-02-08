@@ -534,42 +534,26 @@ namespace System.Data.SqlClient.SNI
         {
             SNIPacket newPacket = packet;
 
-            _writeTaskFactory.StartNew(() =>
+            lock(this)
             {
                 try
                 {
-                    lock (this)
-                    {
-                        packet.WriteToStream(_stream);
-                    }
+                    packet.WriteToStreamAsync(_stream, callback ?? _sendCallback);
+                    return TdsEnums.SNI_SUCCESS_IO_PENDING;
                 }
-                catch (Exception e)
+                catch (ObjectDisposedException ode)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, e);
-
-                    if (callback != null)
-                    {
-                        callback(packet, TdsEnums.SNI_ERROR);
-                    }
-                    else
-                    {
-                        _sendCallback(packet, TdsEnums.SNI_ERROR);
-                    }
-
-                    return;
+                    return ReportErrorAndReleasePacket(packet, ode);
                 }
-
-                if (callback != null)
+                catch (SocketException se)
                 {
-                    callback(packet, TdsEnums.SNI_SUCCESS);
+                    return ReportErrorAndReleasePacket(packet, se);
                 }
-                else
+                catch (IOException ioe)
                 {
-                    _sendCallback(packet, TdsEnums.SNI_SUCCESS);
+                    return ReportErrorAndReleasePacket(packet, ioe);
                 }
-            });
-
-            return TdsEnums.SNI_SUCCESS_IO_PENDING;
+            }
         }
 
         /// <summary>
