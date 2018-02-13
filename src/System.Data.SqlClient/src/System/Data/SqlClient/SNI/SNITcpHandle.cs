@@ -616,7 +616,7 @@ namespace System.Data.SqlClient.SNI
                     }
                     _receiveCallback(p, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
                 }
-            }, packet);
+            }, packet, TaskCreationOptions.DenyChildAttach);
 
             return TdsEnums.SNI_SUCCESS_IO_PENDING;
         }
