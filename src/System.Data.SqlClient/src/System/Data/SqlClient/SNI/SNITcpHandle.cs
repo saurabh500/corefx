@@ -24,6 +24,7 @@ namespace System.Data.SqlClient.SNI
     internal class SNITCPHandle : SNIHandle
     {
         private readonly string _targetServer;
+        private TaskFactory _readTaskFactory;
         private readonly object _callbackObject;
         private readonly Socket _socket;
         private NetworkStream _tcpStream;
@@ -106,6 +107,8 @@ namespace System.Data.SqlClient.SNI
         {
             _writeScheduler = new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler;
             _writeTaskFactory = new TaskFactory(_writeScheduler);
+            TaskScheduler readScheduler = new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler;
+            _readTaskFactory = new TaskFactory(readScheduler);
             _callbackObject = callbackObject;
             _targetServer = serverName;
 
@@ -534,7 +537,7 @@ namespace System.Data.SqlClient.SNI
         {
             SNIPacket newPacket = packet;
 
-            _writeTaskFactory.StartNew(() =>
+            _readTaskFactory.StartNew(() =>
             {
                 try
                 {
