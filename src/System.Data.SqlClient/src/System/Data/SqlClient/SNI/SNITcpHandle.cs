@@ -579,29 +579,43 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         public override uint ReceiveAsync(ref SNIPacket packet, bool isMars = false)
         {
-            lock (this)
+            packet = new SNIPacket(null);
+            _writeTaskFactory.StartNew((_p) =>
             {
-                packet = new SNIPacket(null);
-                packet.Allocate(_bufferSize);
+                SNIPacket p = _p as SNIPacket;
+                lock (this)
+                {
 
-                try
-                {
-                    packet.ReadFromStreamAsync(_stream, _receiveCallback, isMars);
-                    return TdsEnums.SNI_SUCCESS_IO_PENDING;
+                    p.Allocate(_bufferSize);
+                    bool error = false;
+                    try
+                    {
+                        p.ReadFromStream(_stream);
+                        if (p.Length == 0)
+                        {
+                            SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.ConnTerminatedError, string.Empty);
+                            error = true;
+                        }
+
+                    }
+                    catch (Exception e)
+                    {
+                        if (e != null)
+                        {
+                            SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, e);
+                            error = true;
+                        }
+                        
+                    }
+                    if (error)
+                    {
+                        p.Release();
+                    }
+                    _receiveCallback(p, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
                 }
-                catch (ObjectDisposedException ode)
-                {
-                    return ReportErrorAndReleasePacket(packet, ode);
-                }
-                catch (SocketException se)
-                {
-                    return ReportErrorAndReleasePacket(packet, se);
-                }
-                catch (IOException ioe)
-                {
-                    return ReportErrorAndReleasePacket(packet, ioe);
-                }
-            }
+            }, packet);
+
+            return TdsEnums.SNI_SUCCESS_IO_PENDING;
         }
 
         /// <summary>
