@@ -241,7 +241,7 @@ namespace System.Data.SqlClient.SNI
                 //options |= TaskContinuationOptions.LongRunning;
             }
             Task<int> readTask = null;
-            
+            /*
             if(stream is NetworkStream)
             {
                 readTask = ((NetworkStream)stream).ReadAsync(_data, 0, _data.Length);
@@ -258,9 +258,9 @@ namespace System.Data.SqlClient.SNI
             {
                 readTask = ((SslOverTdsStream)stream).ReadAsync(_data, 0, _data.Length);
             }
-            else
+            else */
             {
-                readTask = stream.ReadAsync(_data, 0, _data.Length);
+                readTask = stream.ReadAsync(_data, 0, _data.Length, CancellationToken.None);
             }
             readTask.ContinueWith(t =>
             {
@@ -313,6 +313,7 @@ namespace System.Data.SqlClient.SNI
 
         public Task WriteToStreamAsync(Stream stream)
         {
+            /*
             if (stream is NetworkStream)
                 return ((NetworkStream)stream).WriteAsync(_data, 0, _length);
             if (stream is SslStream)
@@ -321,7 +322,8 @@ namespace System.Data.SqlClient.SNI
                 return ((SNINetworkStream)stream).WriteAsync(_data, 0, _length);
             if (stream is SslOverTdsStream)
                 return ((SslOverTdsStream)stream).WriteAsync(_data, 0, _length);
-            return stream.WriteAsync(_data, 0, _length);
+            */
+            return stream.WriteAsync(_data, 0, _length, CancellationToken.None);
         }
 
         /// <summary>

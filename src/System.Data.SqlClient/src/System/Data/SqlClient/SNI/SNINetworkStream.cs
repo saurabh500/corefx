@@ -43,7 +43,7 @@ namespace System.Data.SqlClient.SNI
         SocketAsyncEventArgs _readArgs = new SocketAsyncEventArgs();
         TaskCompletionSource<int> readTCS = new TaskCompletionSource<int>();
 
-        public new Task<int> ReadAsync(byte[] buffer, int offset, int count)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
             readTCS = new TaskCompletionSource<int>();
             _readArgs.SetBuffer(buffer, offset, count);
@@ -122,7 +122,7 @@ namespace System.Data.SqlClient.SNI
 
         private TaskCompletionSource<object> _writeTcs = new TaskCompletionSource<object>();
 
-        public new Task WriteAsync(byte[] buffer, int offset, int count)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             _writeTcs = new TaskCompletionSource<object>();
             _writeArgs.SetBuffer(buffer, offset, count);
