@@ -85,9 +85,9 @@ namespace System.Data.SqlClient.SNI
             return readBytes;
         }
 
-        public new Task<int> ReadAsync(byte[] buffer, int offset, int count)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            return ReadAsyncInternal(buffer, offset, count, CancellationToken.None);
+            return ReadAsyncInternal(buffer, offset, count, token);
         }
 
         private async Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken token)
