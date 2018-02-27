@@ -23,7 +23,7 @@ namespace System.Data.SqlClient.SNI
     {
         private readonly string _targetServer;
         private readonly Socket _socket;
-        private NetworkStream _tcpStream;
+        private SNINetworkStream _tcpStream;
 
         private Stream _stream;
         private SslStream _sslStream;
@@ -159,7 +159,8 @@ namespace System.Data.SqlClient.SNI
                 }
 
                 _socket.NoDelay = true;
-                _tcpStream = new NetworkStream(_socket, true);
+                //_tcpStream = new NetworkStream(_socket, true);
+                _tcpStream = new SNINetworkStream(_socket);
 
                 _sslOverTdsStream = new SslOverTdsStream(_tcpStream);
                 _sslStream = new SslStream(_sslOverTdsStream, true, new RemoteCertificateValidationCallback(ValidateServerCertificate), null);

@@ -236,10 +236,19 @@ namespace System.Data.SqlClient.SNI
             // and should be removed after evaluating how to fix MARS threading issues efficiently
             if (isMars)
             {
-                options |= TaskContinuationOptions.LongRunning;
+                //options |= TaskContinuationOptions.LongRunning;
             }
+            Task<int> readTask = null;
 
-            stream.ReadAsync(_data, 0, _data.Length).ContinueWith(t =>
+            if(stream is SNINetworkStream)
+            {
+                readTask = ((SNINetworkStream)stream).ReadAsync(_data, 0, _data.Length);
+            }
+            else
+            {
+                readTask = stream.ReadAsync(_data, 0, _data.Length);
+            }
+            readTask.ContinueWith(t =>
             {
                 Exception e = t.Exception != null ? t.Exception.InnerException : null;
                 if (e != null)
@@ -290,6 +299,8 @@ namespace System.Data.SqlClient.SNI
 
         public Task WriteToStreamAsync(Stream stream)
         {
+            if (stream is SNINetworkStream)
+                return ((SNINetworkStream)stream).WriteAsync(_data, 0, _length);
             return stream.WriteAsync(_data, 0, _length);
         }
 
