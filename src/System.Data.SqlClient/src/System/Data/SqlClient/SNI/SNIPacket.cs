@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Net.Security;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -239,10 +241,22 @@ namespace System.Data.SqlClient.SNI
                 //options |= TaskContinuationOptions.LongRunning;
             }
             Task<int> readTask = null;
-
-            if(stream is SNINetworkStream)
+            
+            if(stream is NetworkStream)
+            {
+                readTask = ((NetworkStream)stream).ReadAsync(_data, 0, _data.Length);
+            }
+            else if (stream is SslStream)
+            {
+                readTask = ((SslStream)stream).ReadAsync(_data, 0, _data.Length);
+            }
+            else if (stream is SNINetworkStream)
             {
                 readTask = ((SNINetworkStream)stream).ReadAsync(_data, 0, _data.Length);
+            }
+            else if (stream is SslOverTdsStream)
+            {
+                readTask = ((SslOverTdsStream)stream).ReadAsync(_data, 0, _data.Length);
             }
             else
             {
@@ -299,8 +313,14 @@ namespace System.Data.SqlClient.SNI
 
         public Task WriteToStreamAsync(Stream stream)
         {
+            if (stream is NetworkStream)
+                return ((NetworkStream)stream).WriteAsync(_data, 0, _length);
+            if (stream is SslStream)
+                return ((SslStream)stream).WriteAsync(_data, 0, _length);
             if (stream is SNINetworkStream)
                 return ((SNINetworkStream)stream).WriteAsync(_data, 0, _length);
+            if (stream is SslOverTdsStream)
+                return ((SslOverTdsStream)stream).WriteAsync(_data, 0, _length);
             return stream.WriteAsync(_data, 0, _length);
         }
 

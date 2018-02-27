@@ -62,10 +62,7 @@ namespace System.Data.SqlClient
                         }
                         try
                         {
-                            if (onFailure != null)
-                            {
-                                onFailure(exc);
-                            }
+                            onFailure?.Invoke(exc);
                         }
                         finally
                         {
@@ -76,10 +73,7 @@ namespace System.Data.SqlClient
                     {
                         try
                         {
-                            if (onCancellation != null)
-                            {
-                                onCancellation();
-                            }
+                            onCancellation?.Invoke();
                         }
                         finally
                         {

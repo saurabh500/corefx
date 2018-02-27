@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.IO.Pipes;
+using System.Threading.Tasks;
 
 namespace System.Data.SqlClient.SNI
 {
@@ -83,6 +84,47 @@ namespace System.Data.SqlClient.SNI
             return readBytes;
         }
 
+        public new Task<int> ReadAsync(byte[] buffer, int offset, int count)
+        {
+            return ReadAsyncInternal(buffer, offset, count);
+        }
+
+        private async Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count)
+        {
+            int readBytes = 0;
+            byte[] packetData = new byte[count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count];
+
+            if (_encapsulate)
+            {
+                if (_packetBytes == 0)
+                {
+                    // Account for split packets
+                    while (readBytes < TdsEnums.HEADER_LEN)
+                    {
+                        readBytes += await _stream.ReadAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes);
+                    }
+
+                    _packetBytes = (packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET] << 8) | packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET + 1];
+                    _packetBytes -= TdsEnums.HEADER_LEN;
+                }
+
+                if (count > _packetBytes)
+                {
+                    count = _packetBytes;
+                }
+            }
+
+            readBytes = await _stream.ReadAsync(packetData, 0, count);
+
+            if (_encapsulate)
+            {
+                _packetBytes -= readBytes;
+            }
+
+            Buffer.BlockCopy(packetData, 0, buffer, offset, readBytes);
+            return readBytes;
+        }
+
         /// <summary>
         /// Write buffer
         /// </summary>
@@ -143,6 +185,66 @@ namespace System.Data.SqlClient.SNI
                 }
 
                 _stream.Flush();
+                currentOffset += currentCount;
+            }
+        }
+
+        public new Task WriteAsync(byte[] buffer, int offset, int count) => WriteAsyncInternal(buffer, offset, count);
+
+        private async Task WriteAsyncInternal(byte[] buffer, int offset, int count)
+        {
+            int currentCount = 0;
+            int currentOffset = offset;
+
+            while (count > 0)
+            {
+                // During the SSL negotiation phase, SSL is tunnelled over TDS packet type 0x12. After
+                // negotiation, the underlying socket only sees SSL frames.
+                //
+                if (_encapsulate)
+                {
+                    if (count > PACKET_SIZE_WITHOUT_HEADER)
+                    {
+                        currentCount = PACKET_SIZE_WITHOUT_HEADER;
+                    }
+                    else
+                    {
+                        currentCount = count;
+                    }
+
+                    count -= currentCount;
+
+                    // Prepend buffer data with TDS prelogin header
+                    byte[] combinedBuffer = new byte[TdsEnums.HEADER_LEN + currentCount];
+
+                    // We can only send 4088 bytes in one packet. Header[1] is set to 1 if this is a 
+                    // partial packet (whether or not count != 0).
+                    // 
+                    combinedBuffer[0] = PRELOGIN_PACKET_TYPE;
+                    combinedBuffer[1] = (byte)(count > 0 ? 0 : 1);
+                    combinedBuffer[2] = (byte)((currentCount + TdsEnums.HEADER_LEN) / 0x100);
+                    combinedBuffer[3] = (byte)((currentCount + TdsEnums.HEADER_LEN) % 0x100);
+                    combinedBuffer[4] = 0;
+                    combinedBuffer[5] = 0;
+                    combinedBuffer[6] = 0;
+                    combinedBuffer[7] = 0;
+
+                    for (int i = TdsEnums.HEADER_LEN; i < combinedBuffer.Length; i++)
+                    {
+                        combinedBuffer[i] = buffer[currentOffset + (i - TdsEnums.HEADER_LEN)];
+                    }
+
+                    await _stream.WriteAsync(combinedBuffer, 0, combinedBuffer.Length);
+                }
+                else
+                {
+                    currentCount = count;
+                    count = 0;
+
+                    await _stream.WriteAsync(buffer, currentOffset, currentCount);
+                }
+
+                await _stream.FlushAsync();
                 currentOffset += currentCount;
             }
         }
