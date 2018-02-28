@@ -239,7 +239,7 @@ namespace System.Data.SqlClient.SNI
                 options |= TaskContinuationOptions.LongRunning;
             }
 
-            stream.ReadAsync(_data, 0, _data.Length).ContinueWith(t =>
+            stream.ReadAsync(_data, 0, _data.Length, CancellationToken.None).ContinueWith(t =>
             {
                 Exception e = t.Exception != null ? t.Exception.InnerException : null;
                 if (e != null)
@@ -288,10 +288,8 @@ namespace System.Data.SqlClient.SNI
             stream.Write(_data, 0, _length);
         }
 
-        public Task WriteToStreamAsync(Stream stream)
-        {
-            return stream.WriteAsync(_data, 0, _length);
-        }
+        public Task WriteToStreamAsync(Stream stream) 
+            => stream.WriteAsync(_data, 0, _length, CancellationToken.None);
 
         /// <summary>
         /// Get hash code
