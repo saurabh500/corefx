@@ -29,6 +29,7 @@
     <Compile Include="TcpDefaultForAzureTest.cs" />
     <Compile Include="SqlConnectionBasicTests.cs" />
     <Compile Include="TestTdsServer.cs" />
+    <Compile Include="BenchMark.cs" />
     <Compile Include="..\ManualTests\DataCommon\DataTestUtility.cs" />
   </ItemGroup>
   <ItemGroup>
