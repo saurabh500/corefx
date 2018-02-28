@@ -50,7 +50,10 @@ namespace System.Data.SqlClient.SNI
         /// <param name="count">Byte count</param>
         /// <returns>Bytes read</returns>
         public override int Read(byte[] buffer, int offset, int count)
-            => ReadInternal(buffer, offset, count, CancellationToken.None, false).Result;
+        {
+            Task<int> t = ReadInternal(buffer, offset, count, CancellationToken.None, false);
+            return t.Result;
+        }
 
         /// <summary>
         /// Write Buffer
@@ -117,11 +120,11 @@ namespace System.Data.SqlClient.SNI
 
             if (async)
             {
-                readBytes += await _stream.ReadAsync(packetData, 0, count, token);
+                readBytes = await _stream.ReadAsync(packetData, 0, count, token);
             }
             else
             {
-                readBytes += _stream.Read(packetData, 0, count);
+                readBytes = _stream.Read(packetData, 0, count);
             }
 
             if (_encapsulate)
@@ -132,6 +135,7 @@ namespace System.Data.SqlClient.SNI
             Buffer.BlockCopy(packetData, 0, buffer, offset, readBytes);
             return readBytes;
         }
+
 
         private async Task WriteInternal(byte[] buffer, int offset, int count, CancellationToken token, bool async)
         {
