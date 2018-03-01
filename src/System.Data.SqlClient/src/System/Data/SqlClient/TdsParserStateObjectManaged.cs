@@ -166,13 +166,10 @@ namespace System.Data.SqlClient.SNI
 
         internal override object CreateAndSetAttentionPacket()
         {
-            if (_sniAsyncAttnPacket == null)
-            {
-                SNIPacket attnPacket = new SNIPacket();
-                SetPacketData(attnPacket, SQL.AttentionHeader, TdsEnums.HEADER_LEN);
-                _sniAsyncAttnPacket = attnPacket;
-            }
-            return _sniAsyncAttnPacket;
+            SNIPacket attnPacket = new SNIPacket();
+            _sniAsyncAttnPacket = attnPacket;
+            SetPacketData(attnPacket, SQL.AttentionHeader, TdsEnums.HEADER_LEN);
+            return attnPacket;
         }
 
         internal override uint WritePacket(object packet, bool sync)
