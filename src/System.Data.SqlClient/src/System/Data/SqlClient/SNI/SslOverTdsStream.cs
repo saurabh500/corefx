@@ -51,8 +51,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>Bytes read</returns>
         public override int Read(byte[] buffer, int offset, int count)
         {
-            Task<int> t = ReadInternal(buffer, offset, count, CancellationToken.None, false);
-            return t.Result;
+            return ReadInternal(buffer, offset, count, CancellationToken.None, false).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -100,7 +99,7 @@ namespace System.Data.SqlClient.SNI
                     {
                         if (async)
                         {
-                            readBytes += await _stream.ReadAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token);
+                            readBytes += await _stream.ReadAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token).ConfigureAwait(false);
                         }
                         else
                         {
@@ -120,7 +119,7 @@ namespace System.Data.SqlClient.SNI
 
             if (async)
             {
-                readBytes = await _stream.ReadAsync(packetData, 0, count, token);
+                readBytes = await _stream.ReadAsync(packetData, 0, count, token).ConfigureAwait(false);
             }
             else
             {
@@ -135,7 +134,6 @@ namespace System.Data.SqlClient.SNI
             Buffer.BlockCopy(packetData, 0, buffer, offset, readBytes);
             return readBytes;
         }
-
 
         private async Task WriteInternal(byte[] buffer, int offset, int count, CancellationToken token, bool async)
         {
@@ -182,7 +180,7 @@ namespace System.Data.SqlClient.SNI
 
                     if (async)
                     {
-                        await _stream.WriteAsync(combinedBuffer, 0, combinedBuffer.Length, token);
+                        await _stream.WriteAsync(combinedBuffer, 0, combinedBuffer.Length, token).ConfigureAwait(false);
                     }
                     else
                     {
@@ -196,7 +194,7 @@ namespace System.Data.SqlClient.SNI
 
                     if (async)
                     {
-                        await _stream.WriteAsync(buffer, currentOffset, currentCount, token);
+                        await _stream.WriteAsync(buffer, currentOffset, currentCount, token).ConfigureAwait(false);
                     }
                     else
                     {
@@ -206,7 +204,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (async)
                 {
-                    await _stream.FlushAsync();
+                    await _stream.FlushAsync().ConfigureAwait(false);
                 }
                 else
                 {
