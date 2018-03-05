@@ -306,10 +306,10 @@ namespace System.Data.SqlClient.SNI
         {
             uint status = TdsEnums.SNI_SUCCESS;
             try
-            { 
+            {
                 await stream.WriteAsync(_data, 0, _length, CancellationToken.None);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, e);
                 status = TdsEnums.SNI_ERROR;

@@ -85,6 +85,15 @@ namespace System.Data.SqlClient.SNI
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
             => ReadInternal(buffer, offset, count, token, true);
 
+        /// <summary>
+        /// Read Internal is called synchronosly when async is false
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="count"></param>
+        /// <param name="token"></param>
+        /// <param name="async"></param>
+        /// <returns></returns>
         private async Task<int> ReadInternal(byte[] buffer, int offset, int count, CancellationToken token, bool async)
         {
             int readBytes = 0;
@@ -135,6 +144,15 @@ namespace System.Data.SqlClient.SNI
             return readBytes;
         }
 
+        /// <summary>
+        /// The internal write method calls Sync APIs when Async flag is false
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="count"></param>
+        /// <param name="token"></param>
+        /// <param name="async"></param>
+        /// <returns></returns>
         private async Task WriteInternal(byte[] buffer, int offset, int count, CancellationToken token, bool async)
         {
             int currentCount = 0;
