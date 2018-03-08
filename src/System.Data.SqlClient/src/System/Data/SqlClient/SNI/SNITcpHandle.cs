@@ -469,7 +469,7 @@ namespace System.Data.SqlClient.SNI
                         return TdsEnums.SNI_WAIT_TIMEOUT;
                     }
 
-                    packet = new SNIPacket(null);
+                    packet = new SNIPacket();
                     packet.Allocate(_bufferSize);
                     packet.ReadFromStream(_stream);
 
@@ -533,6 +533,7 @@ namespace System.Data.SqlClient.SNI
             }
             return TdsEnums.SNI_SUCCESS_IO_PENDING;
         }
+        
 
         /// <summary>
         /// Receive a packet asynchronously
@@ -541,9 +542,8 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         public override uint ReceiveAsync(ref SNIPacket packet, bool isMars = false)
         {
-            packet = new SNIPacket(null);
-            packet.Allocate(_bufferSize);
-
+            packet = new SNIPacket(_bufferSize);
+            
             try
             {
                 packet.ReadFromStreamAsync(_stream, _receiveCallback, isMars);
