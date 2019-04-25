@@ -302,8 +302,6 @@ namespace System.Data.SqlClient.SNI
                 _connectionError = SNILoadHandle.SingletonInstance.LastError;
                 _packetEvent.Set();
             }
-
-            ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(PacketHandle.FromManagedPacket(packet), 1);
         }
 
         /// <summary>

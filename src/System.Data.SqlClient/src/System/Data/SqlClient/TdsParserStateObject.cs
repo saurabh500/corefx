@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -2093,7 +2092,6 @@ namespace System.Data.SqlClient
 
                 Interlocked.Decrement(ref _readingCount);
                 shouldDecrement = false;
-
                 if (_parser.MARSOn)
                 { // Only take reset lock on MARS and Async.
                     CheckSetResetConnectionState(error, CallbackType.Read);
@@ -2712,7 +2710,7 @@ namespace System.Data.SqlClient
             bool processFinallyBlock = true;
             try
             {
-                Debug.Assert(CheckPacket(packet, source) && source != null, "AsyncResult null on callback");
+                Debug.Assert(CheckPacket(packet, source), "AsyncResult null on callback");
 
                 if (_parser.MARSOn)
                 { // Only take reset lock on MARS and Async.

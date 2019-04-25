@@ -36,7 +36,8 @@ namespace System.Data.SqlClient.SNI
         protected override bool CheckPacket(PacketHandle packet, TaskCompletionSource<object> source)
         {
             SNIPacket p = packet.ManagedPacket;
-            return p.IsInvalid || source != null;
+            bool result = !p.IsInvalid || source != null;
+            return result;
         }
 
         protected override void CreateSessionHandle(TdsParserStateObject physicalConnection, bool async)
