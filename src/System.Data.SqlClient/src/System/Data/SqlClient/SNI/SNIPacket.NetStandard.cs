@@ -42,7 +42,7 @@ namespace System.Data.SqlClient.SNI
                     packet.Release();
                 }
 
-                cb(packet, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
+                cb(packet, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS, packet._completionCallback == null);
             }
 
             Task<int> t = stream.ReadAsync(_data, 0, _capacity, CancellationToken.None);

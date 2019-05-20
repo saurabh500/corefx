@@ -311,7 +311,7 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         /// <param name="packet">SNI packet</param>
         /// <param name="sniErrorCode">SNI error code</param>
-        public void HandleSendComplete(SNIPacket packet, uint sniErrorCode)
+        public void HandleSendComplete(SNIPacket packet, uint sniErrorCode, bool preventPropagation = false)
         {
             lock (this)
             {

@@ -81,9 +81,9 @@ namespace System.Data.SqlClient.SNI
         /// Invoke the completion callback 
         /// </summary>
         /// <param name="sniErrorCode">SNI error</param>
-        public void InvokeCompletionCallback(uint sniErrorCode)
+        public void InvokeCompletionCallback(uint sniErrorCode, bool preventErrorPropagation)
         {
-            _completionCallback(this, sniErrorCode);
+            _completionCallback(this, sniErrorCode, preventErrorPropagation);
         }
 
         /// <summary>

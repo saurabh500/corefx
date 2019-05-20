@@ -70,9 +70,9 @@ namespace System.Data.SqlClient.SNI
             }
         }
 
-        internal void ReadAsyncCallback(SNIPacket packet, uint error) => ReadAsyncCallback(IntPtr.Zero, PacketHandle.FromManagedPacket(packet), error);
+        internal void ReadAsyncCallback(SNIPacket packet, uint error, bool preventPropagation = false) => ReadAsyncCallback(IntPtr.Zero, PacketHandle.FromManagedPacket(packet), error);
 
-        internal void WriteAsyncCallback(SNIPacket packet, uint sniError) => WriteAsyncCallback(IntPtr.Zero, PacketHandle.FromManagedPacket(packet), sniError);
+        internal void WriteAsyncCallback(SNIPacket packet, uint sniError, bool preventPropagation = false) => WriteAsyncCallback(IntPtr.Zero, PacketHandle.FromManagedPacket(packet), sniError);
 
         protected override void RemovePacketFromPendingList(PacketHandle packet)
         {

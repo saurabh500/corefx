@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlClient
 {
@@ -846,7 +847,7 @@ namespace System.Data.SqlClient
             }
             _hasOpenResult = false;
         }
-        
+
         internal int DecrementPendingCallbacks(bool release)
         {
             int remaining = Interlocked.Decrement(ref _pendingCallbacks);

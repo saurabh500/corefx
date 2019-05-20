@@ -41,8 +41,7 @@ namespace System.Data.SqlClient.SNI
                 {
                     packet.Release();
                 }
-
-                cb(packet, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
+                cb(packet, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS, packet._completionCallback == null);
             }
 
             ValueTask<int> vt = stream.ReadAsync(new Memory<byte>(_data, 0, _capacity), CancellationToken.None);
@@ -53,7 +52,7 @@ namespace System.Data.SqlClient.SNI
                 // Zero length to go via async local function as is error condition
                 if (_length > 0)
                 {
-                    callback(this, TdsEnums.SNI_SUCCESS);
+                    callback(this, TdsEnums.SNI_SUCCESS, _completionCallback == null);
 
                     // Completed
                     return;

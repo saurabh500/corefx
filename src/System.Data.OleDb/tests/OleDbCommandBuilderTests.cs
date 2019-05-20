@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Data.OleDb.Tests
@@ -154,7 +155,20 @@ namespace System.Data.OleDb.Tests
                     Firstname NVARCHAR(5),
                     Lastname NVARCHAR(40), 
                     Nickname NVARCHAR(30))";
-            command.ExecuteNonQuery();
+            try
+            { 
+                command.ExecuteNonQuery();
+            }
+            catch (SEHException sehEx)
+            {
+                Console.WriteLine($"Code: {sehEx.ErrorCode}");
+                Console.WriteLine($"Base Exception error code : {sehEx.GetBaseException().HResult}");
+                Console.WriteLine($"Base Exception message : {sehEx.GetBaseException()?.ToString()}");
+                Console.WriteLine($"Base Inner Exception: {sehEx.InnerException}");
+                
+                // This exception is not expected. So rethrow to indicate test failure.
+                throw;
+            }
             Assert.True(File.Exists(Path.Combine(TestDirectory, tableName)));
 
             command.CommandText =
