@@ -559,7 +559,6 @@
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.NameResolution" />
-    <Reference Include="System.Console" />
   </ItemGroup>
   <ItemGroup Condition="('$(OSGroup)' != 'AnyOS' AND '$(IsUAPAssembly)' == 'true') OR '$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Transactions.Local" />
