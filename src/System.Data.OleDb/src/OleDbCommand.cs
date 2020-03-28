@@ -103,7 +103,7 @@ namespace System.Data.OleDb
 
         [DefaultValue("")]
         [RefreshProperties(RefreshProperties.All)]
-        override public string CommandText
+        public override string CommandText
         {
             get
             {
@@ -120,7 +120,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public int CommandTimeout
+        public override int CommandTimeout
         { // V1.2.3300, XXXCommand V1.0.5000
             get
             {
@@ -151,7 +151,7 @@ namespace System.Data.OleDb
 
         [DefaultValue(System.Data.CommandType.Text)]
         [RefreshProperties(RefreshProperties.All)]
-        override public CommandType CommandType
+        public override CommandType CommandType
         {
             get
             {
@@ -175,7 +175,7 @@ namespace System.Data.OleDb
         }
 
         [DefaultValue(null)]
-        new public OleDbConnection Connection
+        public new OleDbConnection Connection
         {
             get
             {
@@ -215,7 +215,7 @@ namespace System.Data.OleDb
             _connection = null;
         }
 
-        override protected DbConnection DbConnection
+        protected override DbConnection DbConnection
         { // V1.2.3300
             get
             {
@@ -227,7 +227,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override protected DbParameterCollection DbParameterCollection
+        protected override DbParameterCollection DbParameterCollection
         { // V1.2.3300
             get
             {
@@ -235,7 +235,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override protected DbTransaction DbTransaction
+        protected override DbTransaction DbTransaction
         { // V1.2.3300
             get
             {
@@ -273,7 +273,7 @@ namespace System.Data.OleDb
         [
         DesignerSerializationVisibility(DesignerSerializationVisibility.Content)
         ]
-        new public OleDbParameterCollection Parameters
+        public new OleDbParameterCollection Parameters
         {
             get
             {
@@ -299,7 +299,7 @@ namespace System.Data.OleDb
         Browsable(false),
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
         ]
-        new public OleDbTransaction Transaction
+        public new OleDbTransaction Transaction
         {
             get
             {
@@ -322,7 +322,7 @@ namespace System.Data.OleDb
         [
         DefaultValue(System.Data.UpdateRowSource.Both)
         ]
-        override public UpdateRowSource UpdatedRowSource
+        public override UpdateRowSource UpdatedRowSource
         { // V1.2.3300, XXXCommand V1.0.5000
             get
             {
@@ -411,14 +411,38 @@ namespace System.Data.OleDb
             _dbBindings = bindings;
         }
 
-        private void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
+        private unsafe void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
         {
             IntPtr[] ordinals = new IntPtr[bindInfo.Length];
             for (int i = 0; i < ordinals.Length; ++i)
             {
                 ordinals[i] = (IntPtr)(i + 1);
             }
-            OleDbHResult hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, bindInfo);
+
+            OleDbHResult hr;
+
+            if (ODB.IsRunningOnX86)
+            {
+                tagDBPARAMBINDINFO_x86[] bindInfo_x86 = new tagDBPARAMBINDINFO_x86[bindInfo.Length];
+                for (int i = 0; i < bindInfo.Length; i++)
+                {
+                    fixed (tagDBPARAMBINDINFO* p = &bindInfo[i])
+                    {
+                        bindInfo_x86[i] = *(tagDBPARAMBINDINFO_x86*)p;
+                    }
+                }
+                fixed (tagDBPARAMBINDINFO_x86* p = &bindInfo_x86[0])
+                {
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+                }
+            }
+            else
+            {
+                fixed (tagDBPARAMBINDINFO* p = &bindInfo[0])
+                {
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+                }
+            }
 
             if (hr < 0)
             {
@@ -426,7 +450,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public void Cancel()
+        public override void Cancel()
         {
             unchecked
             { _changeID++; }
@@ -539,17 +563,17 @@ namespace System.Data.OleDb
             }
         }
 
-        new public OleDbParameter CreateParameter()
+        public new OleDbParameter CreateParameter()
         {
             return new OleDbParameter();
         }
 
-        override protected DbParameter CreateDbParameter()
+        protected override DbParameter CreateDbParameter()
         {
             return CreateParameter();
         }
 
-        override protected void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing)
             { // release mananged objects
@@ -570,7 +594,7 @@ namespace System.Data.OleDb
             base.Dispose(disposing); // notify base classes
         }
 
-        new public OleDbDataReader ExecuteReader()
+        public new OleDbDataReader ExecuteReader()
         {
             return ExecuteReader(CommandBehavior.Default);
         }
@@ -580,7 +604,7 @@ namespace System.Data.OleDb
             return ExecuteReader(CommandBehavior.Default);
         }
 
-        new public OleDbDataReader ExecuteReader(CommandBehavior behavior)
+        public new OleDbDataReader ExecuteReader(CommandBehavior behavior)
         {
             _executeQuery = true;
             return ExecuteReaderInternal(behavior, ADP.ExecuteReader);
@@ -591,7 +615,7 @@ namespace System.Data.OleDb
             return ExecuteReader(behavior);
         }
 
-        override protected DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
+        protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
             return ExecuteReader(behavior);
         }
@@ -910,14 +934,14 @@ namespace System.Data.OleDb
             return e;
         }
 
-        override public int ExecuteNonQuery()
+        public override int ExecuteNonQuery()
         {
             _executeQuery = false;
             ExecuteReaderInternal(CommandBehavior.Default, ADP.ExecuteNonQuery);
             return ADP.IntPtrToInt32(_recordsAffected);
         }
 
-        override public object ExecuteScalar()
+        public override object ExecuteScalar()
         {
             object value = null;
             _executeQuery = true;
@@ -1009,27 +1033,23 @@ namespace System.Data.OleDb
                 return string.Empty;
             }
             CommandType cmdtype = CommandType;
-            switch (cmdtype)
+            return cmdtype switch
             {
-                case System.Data.CommandType.Text:
-                    // do nothing, already expanded by user
-                    return cmdtxt;
+                // do nothing, already expanded by user
+                System.Data.CommandType.Text => cmdtxt,
 
-                case System.Data.CommandType.StoredProcedure:
-                    // { ? = CALL SPROC (? ?) }, { ? = CALL SPROC }, { CALL SPRC (? ?) }, { CALL SPROC }
-                    return ExpandStoredProcedureToText(cmdtxt);
+                // { ? = CALL SPROC (? ?) }, { ? = CALL SPROC }, { CALL SPRC (? ?) }, { CALL SPROC }
+                System.Data.CommandType.StoredProcedure => ExpandStoredProcedureToText(cmdtxt),
 
-                case System.Data.CommandType.TableDirect:
-                    // @devnote: Provider=Jolt4.0 doesn't like quoted table names, SQOLEDB requires them
-                    // Providers should not require table names to be quoted and should guarantee that
-                    // unquoted table names correctly open the specified table, even if the table name
-                    // contains special characters, as long as the table can be unambiguously identified
-                    // without quoting.
-                    return cmdtxt;
+                // @devnote: Provider=Jolt4.0 doesn't like quoted table names, SQOLEDB requires them
+                // Providers should not require table names to be quoted and should guarantee that
+                // unquoted table names correctly open the specified table, even if the table name
+                // contains special characters, as long as the table can be unambiguously identified
+                // without quoting.
+                System.Data.CommandType.TableDirect => cmdtxt,
 
-                default:
-                    throw ADP.InvalidCommandType(cmdtype);
-            }
+                _ => throw ADP.InvalidCommandType(cmdtype),
+            };
         }
 
         private string ExpandOdbcMaximumToText(string sproctext, int parameterCount)
@@ -1142,7 +1162,7 @@ namespace System.Data.OleDb
             {
                 OleDbHResult hr;
 
-                String commandText = ExpandCommandText();
+                string commandText = ExpandCommandText();
 
                 hr = _icommandText.SetCommandText(ref ODB.DBGUID_DEFAULT, commandText);
 
@@ -1163,7 +1183,7 @@ namespace System.Data.OleDb
             { _changeID++; }
         }
 
-        override public void Prepare()
+        public override void Prepare()
         {
             if (CommandType.TableDirect != CommandType)
             {
@@ -1226,7 +1246,7 @@ namespace System.Data.OleDb
             if (null != _icommandText)
             {
                 OleDbHResult hr;
-                tagDBPROP[] dbprops;
+                ItagDBPROP[] dbprops;
                 UnsafeNativeMethods.ICommandProperties icommandProperties = ICommandProperties();
 
                 using (PropertyIDSet propidset = new PropertyIDSet(propertySet, propertyID))
@@ -1309,22 +1329,22 @@ namespace System.Data.OleDb
             {
                 propSet = new DBPropSet(1);
 
-                tagDBPROP[] dbprops = new tagDBPROP[count];
+                ItagDBPROP[] dbprops = new ItagDBPROP[count];
 
-                dbprops[0] = new tagDBPROP(ODB.DBPROP_COMMANDTIMEOUT, false, CommandTimeout);
+                dbprops[0] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_COMMANDTIMEOUT, false, CommandTimeout);
 
                 if (_executeQuery)
                 {
                     // 'Microsoft.Jet.OLEDB.4.0' default is DBPROPVAL_AO_SEQUENTIAL
-                    dbprops[1] = new tagDBPROP(ODB.DBPROP_ACCESSORDER, false, ODB.DBPROPVAL_AO_RANDOM);
+                    dbprops[1] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_ACCESSORDER, false, ODB.DBPROPVAL_AO_RANDOM);
 
                     if (keyInfo)
                     {
                         // 'Unique Rows' property required for SQLOLEDB to retrieve things like 'BaseTableName'
-                        dbprops[2] = new tagDBPROP(ODB.DBPROP_UNIQUEROWS, false, keyInfo);
+                        dbprops[2] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_UNIQUEROWS, false, keyInfo);
 
                         // otherwise 'Microsoft.Jet.OLEDB.4.0' doesn't support IColumnsRowset
-                        dbprops[3] = new tagDBPROP(ODB.DBPROP_IColumnsRowset, false, true);
+                        dbprops[3] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_IColumnsRowset, false, true);
                     }
                 }
                 propSet.SetPropertySet(0, OleDbPropertySetGuid.Rowset, dbprops);

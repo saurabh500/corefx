@@ -24,7 +24,7 @@ namespace System.Data.OleDb
     [DefaultEvent("InfoMessage")]
     public sealed partial class OleDbConnection : DbConnection, ICloneable, IDbConnection
     {
-        static private readonly object EventInfoMessage = new object();
+        private static readonly object EventInfoMessage = new object();
 
         public OleDbConnection(string connectionString) : this()
         {
@@ -44,7 +44,7 @@ namespace System.Data.OleDb
         SettingsBindable(true),
         RefreshProperties(RefreshProperties.All),
         ]
-        override public string ConnectionString
+        public override string ConnectionString
         {
             get
             {
@@ -64,7 +64,7 @@ namespace System.Data.OleDb
         [
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
         ]
-        override public int ConnectionTimeout
+        public override int ConnectionTimeout
         {
             get
             {
@@ -90,7 +90,7 @@ namespace System.Data.OleDb
         }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        override public string Database
+        public override string Database
         {
             get
             {
@@ -123,7 +123,7 @@ namespace System.Data.OleDb
         [
         Browsable(true)
         ]
-        override public string DataSource
+        public override string DataSource
         {
             get
             {
@@ -171,7 +171,7 @@ namespace System.Data.OleDb
         Browsable(true),
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
         ]
-        public String Provider
+        public string Provider
         {
             get
             {
@@ -189,7 +189,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override public string ServerVersion
+        public override string ServerVersion
         {
             get
             {
@@ -202,7 +202,7 @@ namespace System.Data.OleDb
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
         // ResDescriptionAttribute(SR.DbConnection_State),
         ]
-        override public ConnectionState State
+        public override ConnectionState State
         {
             get
             {
@@ -216,7 +216,7 @@ namespace System.Data.OleDb
             if (IsOpen)
             {
                 object value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_CONNECTIONSTATUS);
-                if (value is Int32)
+                if (value is int)
                 {
                     int connectionStatus = (int)value;
                     switch (connectionStatus)
@@ -293,7 +293,7 @@ namespace System.Data.OleDb
 
             int quotedIdentifierCase;
             object value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_QUOTEDIDENTIFIERCASE);
-            if (value is Int32)
+            if (value is int)
             {// not OleDbPropertyStatus
                 quotedIdentifierCase = (int)value;
             }
@@ -306,20 +306,20 @@ namespace System.Data.OleDb
 
         internal bool ForceNewConnection { get { return false; } set {; } }
 
-        new public OleDbTransaction BeginTransaction()
+        public new OleDbTransaction BeginTransaction()
         {
             return BeginTransaction(IsolationLevel.Unspecified);
         }
 
-        new public OleDbTransaction BeginTransaction(IsolationLevel isolationLevel)
+        public new OleDbTransaction BeginTransaction(IsolationLevel isolationLevel)
         {
             return (OleDbTransaction)InnerConnection.BeginTransaction(isolationLevel);
         }
 
-        override public void ChangeDatabase(string value)
+        public override void ChangeDatabase(string value)
         {
             CheckStateOpen(ADP.ChangeDatabase);
-            if ((null == value) || (0 == value.Trim().Length))
+            if (string.IsNullOrWhiteSpace(value))
             {
                 throw ADP.EmptyDatabaseName();
             }
@@ -341,13 +341,13 @@ namespace System.Data.OleDb
             return clone;
         }
 
-        override public void Close()
+        public override void Close()
         {
             InnerConnection.CloseConnection(this, ConnectionFactory);
             // does not require GC.KeepAlive(this) because of OnStateChange
         }
 
-        new public OleDbCommand CreateCommand()
+        public new OleDbCommand CreateCommand()
         {
             return new OleDbCommand("", this);
         }
@@ -355,7 +355,8 @@ namespace System.Data.OleDb
         private void DisposeMe(bool disposing)
         {
             if (disposing)
-            { // release mananged objects
+            {
+                // release mananged objects
                 if (DesignMode)
                 {
                     // release the object pool in design-mode so that
@@ -366,12 +367,11 @@ namespace System.Data.OleDb
         }
 
         // suppress this message - we cannot use SafeHandle here.
-        [SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive")]
-        override protected DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
+        protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
         {
             DbTransaction transaction = InnerConnection.BeginTransaction(isolationLevel);
 
-            // InnerConnection doesn't maintain a ref on the outer connection (this) and 
+            // InnerConnection doesn't maintain a ref on the outer connection (this) and
             //   subsequently leaves open the possibility that the outer connection could be GC'ed before the DbTransaction
             //   is fully hooked up (leaving a DbTransaction with a null connection property). Ensure that this is reachable
             //   until the completion of BeginTransaction with KeepAlive
@@ -515,15 +515,9 @@ namespace System.Data.OleDb
                     ADP.TraceExceptionWithoutRethrow(e);
                 }
             }
-#if DEBUG
-            else
-            {
-                OleDbException exception = OleDbException.CreateException(errorInfo, errorCode, null);
-            }
-#endif
         }
 
-        override public void Open()
+        public override void Open()
         {
             InnerConnection.OpenConnection(this, ConnectionFactory);
 
@@ -554,7 +548,7 @@ namespace System.Data.OleDb
                             StringBuilder builder = new StringBuilder();
                             Debug.Assert(1 == propSet.PropertySetCount, "too many PropertySets");
 
-                            tagDBPROP[] dbprops = propSet.GetPropertySet(0, out propertySet);
+                            ItagDBPROP[] dbprops = propSet.GetPropertySet(0, out propertySet);
                             Debug.Assert(1 == dbprops.Length, "too many Properties");
 
                             ODB.PropsetSetFailure(builder, description, dbprops[0].dwStatus);
@@ -584,7 +578,7 @@ namespace System.Data.OleDb
             return GetOpenConnection().ValidateTransaction(transaction, method);
         }
 
-        static internal Exception ProcessResults(OleDbHResult hresult, OleDbConnection connection, object src)
+        internal static Exception ProcessResults(OleDbHResult hresult, OleDbConnection connection, object src)
         {
             if ((0 <= (int)hresult) && ((null == connection) || (null == connection.Events[EventInfoMessage])))
             {
@@ -643,14 +637,14 @@ namespace System.Data.OleDb
         }
 
         // @devnote: should be multithread safe
-        static public void ReleaseObjectPool()
+        public static void ReleaseObjectPool()
         {
             OleDbConnectionString.ReleaseObjectPool();
             OleDbConnectionInternal.ReleaseObjectPool();
             OleDbConnectionFactory.SingletonInstance.ClearAllPools();
         }
 
-        static private void ResetState(OleDbConnection connection)
+        private static void ResetState(OleDbConnection connection)
         {
             if (null != connection)
             {

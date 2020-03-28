@@ -10,9 +10,9 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
-    sealed internal class DBPropSet : SafeHandle
+    internal sealed class DBPropSet : SafeHandle
     {
-        private readonly Int32 propertySetCount;
+        private readonly int propertySetCount;
 
         // stores the exception with last error.HRESULT from IDBProperties.GetProperties
         private Exception lastErrorFromProvider;
@@ -101,7 +101,7 @@ namespace System.Data.OleDb
         {
             // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
             UnsafeNativeMethods.IErrorInfo errorInfo = null;
-            string message = String.Empty;
+            string message = string.Empty;
 
             OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo != null))
@@ -120,7 +120,7 @@ namespace System.Data.OleDb
             }
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             IntPtr ptr = base.handle;
@@ -156,7 +156,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal tagDBPROP[] GetPropertySet(int index, out Guid propertyset)
+        internal ItagDBPROP[] GetPropertySet(int index, out Guid propertyset)
         {
             if ((index < 0) || (PropertySetCount <= index))
             {
@@ -173,7 +173,7 @@ namespace System.Data.OleDb
             }
 
             tagDBPROPSET propset = new tagDBPROPSET();
-            tagDBPROP[] properties = null;
+            ItagDBPROP[] properties = null;
 
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
@@ -184,10 +184,10 @@ namespace System.Data.OleDb
                 Marshal.PtrToStructure(propertySetPtr, propset);
                 propertyset = propset.guidPropertySet;
 
-                properties = new tagDBPROP[propset.cProperties];
+                properties = new ItagDBPROP[propset.cProperties];
                 for (int i = 0; i < properties.Length; ++i)
                 {
-                    properties[i] = new tagDBPROP();
+                    properties[i] = OleDbStructHelpers.CreateTagDbProp();
                     IntPtr ptr = ADP.IntPtrOffset(propset.rgProperties, i * ODB.SizeOf_tagDBPROP);
                     Marshal.PtrToStructure(ptr, properties[i]);
                 }
@@ -202,7 +202,7 @@ namespace System.Data.OleDb
             return properties;
         }
 
-        internal void SetPropertySet(int index, Guid propertySet, tagDBPROP[] properties)
+        internal void SetPropertySet(int index, Guid propertySet, ItagDBPROP[] properties)
         {
             if ((index < 0) || (PropertySetCount <= index))
             {
@@ -269,11 +269,11 @@ namespace System.Data.OleDb
             }
         }
 
-        static internal DBPropSet CreateProperty(Guid propertySet, int propertyId, bool required, object value)
+        internal static DBPropSet CreateProperty(Guid propertySet, int propertyId, bool required, object value)
         {
-            tagDBPROP dbprop = new tagDBPROP(propertyId, required, value);
+            ItagDBPROP dbprop = OleDbStructHelpers.CreateTagDbProp(propertyId, required, value);
             DBPropSet propertyset = new DBPropSet(1);
-            propertyset.SetPropertySet(0, propertySet, new tagDBPROP[1] { dbprop });
+            propertyset.SetPropertySet(0, propertySet, new ItagDBPROP[1] { dbprop });
             return propertyset;
         }
     }
